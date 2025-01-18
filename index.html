@@ -3,97 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediGuard - Visualização 3D de PDF</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <title>MediGuard - Verificador de Arquivos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; }
-        #container { width: 100%; height: 100vh; display: block; }
-        #fileInput { position: absolute; top: 20px; left: 20px; z-index: 10; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            color: #fff;
+        }
+
+        #container {
+            padding: 20px;
+            max-width: 600px;
+            margin: 50px auto;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #1E90FF;
+        }
+
+        input[type="file"] {
+            display: block;
+            margin: 20px auto;
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #1E90FF;
+            border: none;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            display: block;
+            margin: 20px auto;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #4fa3f7;
+        }
+
+        #message {
+            text-align: center;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+
+        .malicious {
+            color: red;
+        }
+
+        .safe {
+            color: green;
+        }
     </style>
 </head>
 <body>
 
-    <input type="file" id="fileInput" accept="application/pdf" />
-    <div id="container"></div>
+    <div id="container">
+        <h1>MediGuard - Verificador de Arquivos</h1>
+        <input type="file" id="fileInput" accept="application/pdf" />
+        <button onclick="checkFile()">Verificar Arquivo</button>
+        <div id="message"></div>
+    </div>
 
     <script>
-        // Variáveis principais
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('container').appendChild(renderer.domElement);
+        // Função para verificar o arquivo
+        function checkFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            const messageElement = document.getElementById('message');
 
-        // Luzes
-        const ambientLight = new THREE.AmbientLight(0x404040, 1); 
-        scene.add(ambientLight);
-        
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1); 
-        directionalLight.position.set(5, 5, 5);
-        scene.add(directionalLight);
-
-        // Câmera
-        camera.position.z = 5;
-
-        // Função para lidar com o upload do PDF
-        document.getElementById('fileInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const arrayBuffer = e.target.result;
-                    renderPDF(arrayBuffer);
-                };
-                reader.readAsArrayBuffer(file);
+            if (!file) {
+                messageElement.textContent = 'Por favor, selecione um arquivo PDF!';
+                messageElement.className = '';
+                return;
             }
-        });
 
-        // Função para renderizar o PDF como imagens
-        function renderPDF(pdfData) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const pdfData = e.target.result;
+                verifyPDF(pdfData);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Função para verificar se o PDF contém hashes maliciosos
+        function verifyPDF(pdfData) {
             const loadingTask = pdfjsLib.getDocument(pdfData);
             loadingTask.promise.then(function(pdf) {
                 const numPages = pdf.numPages;
-                const pageMeshes = [];
+                let foundMaliciousHash = false;
 
+                // Padrão de hash (exemplo de MD5, SHA-1, SHA-256)
+                const hashPattern = /\b([a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64})\b/g;
+
+                // Loop para percorrer todas as páginas do PDF
+                const promises = [];
                 for (let i = 1; i <= numPages; i++) {
-                    pdf.getPage(i).then(function(page) {
-                        const viewport = page.getViewport({ scale: 1.5 });
-                        const canvas = document.createElement('canvas');
-                        const context = canvas.getContext('2d');
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
+                    promises.push(pdf.getPage(i).then(function(page) {
+                        return page.getTextContent().then(function(textContent) {
+                            const text = textContent.items.map(item => item.str).join(' ');
 
-                        page.render({ canvasContext: context, viewport: viewport }).promise.then(function() {
-                            const texture = new THREE.Texture(canvas);
-                            texture.needsUpdate = true;
-                            const geometry = new THREE.PlaneGeometry(viewport.width / 100, viewport.height / 100);
-                            const material = new THREE.MeshStandardMaterial({ map: texture });
-                            const pageMesh = new THREE.Mesh(geometry, material);
-                            pageMesh.position.set(0, 0, -i * 2); // Posiciona as páginas no espaço 3D
-
-                            scene.add(pageMesh);
-                            pageMeshes.push(pageMesh);
+                            // Verifica se há hashes no texto da página
+                            const hashes = text.match(hashPattern);
+                            if (hashes) {
+                                foundMaliciousHash = true;
+                            }
                         });
-                    });
+                    }));
                 }
 
-                animate();
+                // Depois de verificar todas as páginas
+                Promise.all(promises).then(function() {
+                    const messageElement = document.getElementById('message');
+                    if (foundMaliciousHash) {
+                        messageElement.textContent = 'Atenção! O arquivo contém hashes maliciosos.';
+                        messageElement.className = 'malicious';
+                    } else {
+                        messageElement.textContent = 'O arquivo está liberado e não contém hashes maliciosos.';
+                        messageElement.className = 'safe';
+                    }
+                });
             });
         }
-
-        // Função de animação
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-
-        // Ajusta o tamanho ao redimensionar a janela
-        window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-        });
     </script>
 
 </body>
