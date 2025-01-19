@@ -71,6 +71,20 @@
             margin-bottom: 20px;
         }
 
+        #uploadCircle::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 5px solid transparent;
+            border-top-color: var(--primary-color);
+            animation: spin 2s linear infinite;
+            display: none;
+        }
+
         #circleText {
             font-size: 1rem;
             font-weight: bold;
@@ -112,21 +126,6 @@
         body[data-theme="light"] #logs {
             background-color: var(--background-light);
             color: var(--text-light);
-        }
-
-        /* Animação do círculo girando */
-        #uploadCircle::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            border: 5px solid transparent;
-            border-top-color: var(--primary-color);
-            animation: spin 2s linear infinite;
-            display: none;
         }
 
         @keyframes spin {
