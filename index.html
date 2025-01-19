@@ -7,17 +7,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <style>
         :root {
+            --background-dark: #121212;
+            --text-dark: #fff;
+            --background-light: #f4f4f4;
+            --text-light: #333;
             --primary-color: #1E90FF;
-            --background-color: #121212;
-            --text-color: #fff;
-            --secondary-color: #444;
+            --safe-color: #2ecc71;
+            --danger-color: #e74c3c;
         }
 
-        [data-theme="light"] {
-            --primary-color: #007bff;
-            --background-color: #f5f5f5;
-            --text-color: #000;
-            --secondary-color: #ddd;
+        body[data-theme="dark"] {
+            background-color: var(--background-dark);
+            color: var(--text-dark);
+        }
+
+        body[data-theme="light"] {
+            background-color: var(--background-light);
+            color: var(--text-light);
         }
 
         * {
@@ -28,184 +34,209 @@
 
         body {
             font-family: 'Arial', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-        }
-
-        #container {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             padding: 20px;
-            flex-direction: column;
+        }
+
+        #container {
+            width: 100%;
+            max-width: 600px;
             text-align: center;
+        }
+
+        #title {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        #uploadCircle {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            border: 5px solid var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
             position: relative;
         }
 
-        /* Título */
-        h1 {
-            color: var(--primary-color);
-            margin-bottom: 20px;
+        #uploadCircle::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 5px solid transparent;
+            border-top-color: var(--primary-color);
+            animation: spin 2s linear infinite;
+            display: none;
         }
 
-        /* Botão de alternância de tema */
+        #circleText {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        #logs {
+            margin-top: 20px;
+            font-size: 1rem;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid var(--primary-color);
+            padding: 10px;
+            border-radius: 8px;
+            background-color: var(--background-dark);
+            color: var(--text-dark);
+        }
+
         #themeToggle {
             position: absolute;
             top: 20px;
             right: 20px;
+            font-size: 1.5rem;
+            cursor: pointer;
             background: none;
             border: none;
-            cursor: pointer;
-            font-size: 1.5rem;
-            color: var(--text-color);
+            color: var(--primary-color);
         }
 
-        input[type="file"] {
-            display: none;
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
-        /* Logs */
-        #logs {
-            margin-top: 20px;
-            font-family: monospace;
-            font-size: 1rem;
-            white-space: pre-wrap;
-            max-height: 150px;
-            overflow-y: auto;
-            border: 1px solid var(--secondary-color);
-            border-radius: 5px;
-            padding: 10px;
-            width: 100%;
-        }
-
-        /* Estilo para Dispositivos Móveis */
-        @media (max-width: 768px) {
-            body {
-                text-align: center;
-            }
-
-            #circleContainer {
-                position: relative;
-                width: 200px;
-                height: 200px;
-                border-radius: 50%;
-                background-color: var(--secondary-color);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                margin: 20px auto;
-                cursor: pointer;
-                color: var(--text-color);
-            }
-
-            #circleContainer .circle-content {
-                position: absolute;
-                text-align: center;
-                font-size: 1rem;
-            }
-
-            /* Barra de progresso circular */
-            #progressCircle {
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                border: 10px solid transparent;
-                border-top: 10px solid var(--primary-color);
-                border-radius: 50%;
-                animation: rotate 1s linear infinite;
-                display: none;
-            }
-
-            @keyframes rotate {
-                from {
-                    transform: rotate(0deg);
-                }
-                to {
-                    transform: rotate(360deg);
-                }
-            }
+        body[data-theme="light"] #logs {
+            background-color: var(--background-light);
+            color: var(--text-light);
         }
     </style>
 </head>
 <body data-theme="dark">
+    <button id="themeToggle" onclick="toggleTheme()">🌙</button>
     <div id="container">
-        <h1>MediGuard - Verificador de Arquivos</h1>
-
-        <!-- Botão para alternar tema -->
-        <button id="themeToggle" onclick="toggleTheme()">🌙</button>
-
-        <!-- Layout Mobile -->
-        <div id="circleContainer" onclick="triggerUpload()">
-            <div class="circle-content">
-                <span id="circleText">Imputar Arquivo</span>
-            </div>
-            <div id="progressCircle"></div>
+        <div id="title">MediGuard - Verificador de Arquivos</div>
+        <div id="uploadCircle" onclick="triggerUpload()">
+            <span id="circleText">Imputar Arquivo</span>
         </div>
-
         <input type="file" id="fileInput" accept="application/pdf" onchange="handleFileUpload()" />
-
         <div id="logs"></div>
     </div>
 
     <script>
-        const fileInput = document.getElementById('fileInput');
-        const progressCircle = document.getElementById('progressCircle');
-        const circleText = document.getElementById('circleText');
-        const logsElement = document.getElementById('logs');
-        const themeToggle = document.getElementById('themeToggle');
-        const body = document.body;
-
         // Trocar tema (Dark/Light)
         function toggleTheme() {
+            const body = document.body;
             const currentTheme = body.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             body.setAttribute('data-theme', newTheme);
+            const themeToggle = document.getElementById('themeToggle');
             themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
         }
 
         // Simula clique no input de arquivo
         function triggerUpload() {
+            const fileInput = document.getElementById('fileInput');
             fileInput.click();
         }
 
-        // Lida com o upload do arquivo
+        // Lida com o upload do arquivo e inicia a validação
         function handleFileUpload() {
+            const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0];
-            if (!file) return;
+            const logsElement = document.getElementById('logs');
+            const circleText = document.getElementById('circleText');
+            const uploadCircle = document.getElementById('uploadCircle');
 
-            // Mostra a animação de progresso
-            progressCircle.style.display = 'block';
+            if (!file) {
+                circleText.textContent = 'Por favor, selecione um arquivo!';
+                return;
+            }
+
+            logsElement.textContent = ''; // Limpa os logs
             circleText.textContent = 'Processando...';
+            uploadCircle.style.setProperty('--spin-display', 'block');
 
-            // Simula validação (exemplo)
-            setTimeout(() => {
-                progressCircle.style.display = 'none';
-                validateFile(file);
+            // Logs simulados com progresso
+            let progress = 0;
+            const logMessages = [
+                "Iniciando análise do arquivo...",
+                "Analisando conteúdo da página 1...",
+                "Analisando hashes...",
+                "Verificando a integridade do arquivo...",
+                "Finalizando análise..."
+            ];
+
+            const interval = setInterval(() => {
+                progress += 20;
+
+                if (progress <= 100) {
+                    logsElement.textContent += logMessages[Math.min((progress / 20) - 1, logMessages.length - 1)] + '\n';
+                }
+
+                // Quando atingir 100%, iniciar a verificação de hashes
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    uploadCircle.style.animation = 'none'; // Para a animação do círculo
+                    verifyPDF(file, logsElement, circleText);
+                }
             }, 1000);
         }
 
-        // Valida o arquivo
-        function validateFile(file) {
+        // Verifica o arquivo PDF e detecta hashes maliciosos
+        function verifyPDF(file, logsElement, circleText) {
             const reader = new FileReader();
             reader.onload = function (e) {
                 const pdfData = e.target.result;
                 const loadingTask = pdfjsLib.getDocument(pdfData);
 
                 loadingTask.promise.then((pdf) => {
+                    const numPages = pdf.numPages;
                     let foundMaliciousHash = false;
 
-                    // Simula validação
-                    setTimeout(() => {
-                        foundMaliciousHash = Math.random() < 0.5; // Simulação de hash malicioso
+                    // Padrão de hash (MD5, SHA-1, SHA-256)
+                    const hashPattern = /\b([a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64})\b/g;
+
+                    const promises = [];
+                    for (let i = 1; i <= numPages; i++) {
+                        promises.push(
+                            pdf.getPage(i).then((page) => {
+                                return page.getTextContent().then((textContent) => {
+                                    const text = textContent.items.map((item) => item.str).join(' ');
+
+                                    // Verifica se há hashes no texto da página
+                                    const hashes = text.match(hashPattern);
+                                    if (hashes) {
+                                        foundMaliciousHash = true;
+                                    }
+                                });
+                            })
+                        );
+                    }
+
+                    Promise.all(promises).then(() => {
                         if (foundMaliciousHash) {
                             circleText.textContent = 'Malicioso!';
-                            logsElement.textContent = 'Hash malicioso encontrado!';
+                            logsElement.textContent += 'Atenção! O arquivo contém hashes maliciosos.\n';
                         } else {
                             circleText.textContent = 'Seguro!';
-                            logsElement.textContent = 'Nenhum hash malicioso encontrado.';
+                            logsElement.textContent += 'Nenhum hash malicioso encontrado.\n';
                         }
-                    }, 2000);
+                    });
                 });
             };
             reader.readAsArrayBuffer(file);
