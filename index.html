@@ -68,25 +68,7 @@
             align-items: center;
             cursor: pointer;
             position: relative;
-        }
-
-        #percentMalicious {
-            position: absolute;
-            top: -25px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--danger-color);
-        }
-
-        #percentSafe {
-            position: absolute;
-            top: -25px;
-            right: -100px;
-            font-size: 1rem;
-            font-weight: bold;
-            color: var(--safe-color);
+            margin-bottom: 20px;
         }
 
         #circleText {
@@ -94,8 +76,16 @@
             font-weight: bold;
         }
 
+        .percentages {
+            margin-bottom: 20px;
+        }
+
+        .percentage {
+            font-size: 1.2rem;
+            margin: 10px 0;
+        }
+
         #logs {
-            margin-top: 20px;
             font-size: 1rem;
             white-space: pre-wrap;
             font-family: monospace;
@@ -130,15 +120,18 @@
     <div id="container">
         <div id="title">MediGuard</div>
         <div id="uploadCircle" onclick="triggerUpload()">
-            <div id="percentMalicious">0%</div>
-            <div id="percentSafe">100% seguro</div>
             <span id="circleText">Selecionar Arquivo</span>
+        </div>
+        <div class="percentages">
+            <div id="percentMalicious" class="percentage" style="color: var(--danger-color);">Maliciosidade: 0%</div>
+            <div id="percentSafe" class="percentage" style="color: var(--safe-color);">Segurança: 100%</div>
         </div>
         <input type="file" id="fileInput" accept="application/pdf" onchange="handleFileUpload()" />
         <div id="logs"></div>
     </div>
 
     <script>
+        // Alterna entre tema claro e escuro
         function toggleTheme() {
             const body = document.body;
             const currentTheme = body.getAttribute('data-theme');
@@ -148,11 +141,13 @@
             themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
         }
 
+        // Simula clique no input de arquivo
         function triggerUpload() {
             const fileInput = document.getElementById('fileInput');
             fileInput.click();
         }
 
+        // Lida com o upload do arquivo e inicia a análise
         function handleFileUpload() {
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0];
@@ -168,23 +163,53 @@
 
             logsElement.textContent = ''; // Limpa os logs
             circleText.textContent = 'Processando...';
-            percentMalicious.textContent = '0%';
-            percentSafe.textContent = '100% seguro';
+            percentMalicious.textContent = 'Maliciosidade: 0%';
+            percentSafe.textContent = 'Segurança: 100%';
 
-            setTimeout(() => {
-                // Simula detecção de maliciosidade
-                const maliciosidade = Math.floor(Math.random() * 101);
-                percentMalicious.textContent = `${maliciosidade}%`;
-                percentSafe.textContent = `${100 - maliciosidade}% seguro`;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const pdfData = e.target.result;
+                const loadingTask = pdfjsLib.getDocument(pdfData);
 
-                if (maliciosidade > 50) {
-                    circleText.textContent = 'Arquivo perigoso!';
-                } else {
-                    circleText.textContent = 'Arquivo seguro!';
-                }
+                loadingTask.promise.then((pdf) => {
+                    const numPages = pdf.numPages;
+                    const hashPattern = /\b([a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64})\b/g;
+                    let hashCount = 0;
 
-                logsElement.textContent = `Análise concluída.\nPercentual de maliciosidade: ${maliciosidade}%`;
-            }, 2000);
+                    const promises = [];
+                    for (let i = 1; i <= numPages; i++) {
+                        promises.push(
+                            pdf.getPage(i).then((page) => {
+                                return page.getTextContent().then((textContent) => {
+                                    const text = textContent.items.map((item) => item.str).join(' ');
+
+                                    // Busca hashes no texto
+                                    const hashes = text.match(hashPattern);
+                                    if (hashes) {
+                                        hashCount += hashes.length;
+                                        logsElement.textContent += `Página ${i}: ${hashes.length} hash(es) encontrado(s).\n`;
+                                    } else {
+                                        logsElement.textContent += `Página ${i}: Nenhum hash encontrado.\n`;
+                                    }
+                                });
+                            })
+                        );
+                    }
+
+                    Promise.all(promises).then(() => {
+                        const maliciousPercentage = Math.min(hashCount * 10, 100); // Exemplo de cálculo
+                        percentMalicious.textContent = `Maliciosidade: ${maliciousPercentage}%`;
+                        percentSafe.textContent = `Segurança: ${100 - maliciousPercentage}%`;
+
+                        if (maliciousPercentage > 0) {
+                            circleText.textContent = 'Arquivo Malicioso!';
+                        } else {
+                            circleText.textContent = 'Arquivo Seguro!';
+                        }
+                    });
+                });
+            };
+            reader.readAsArrayBuffer(file);
         }
     </script>
 </body>
