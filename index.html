@@ -19,11 +19,13 @@
         body[data-theme="dark"] {
             background-color: var(--background-dark);
             color: var(--text-dark);
+            transition: background-color 0.5s, color 0.5s;
         }
 
         body[data-theme="light"] {
             background-color: var(--background-light);
             color: var(--text-light);
+            transition: background-color 0.5s, color 0.5s;
         }
 
         * {
@@ -71,24 +73,11 @@
             margin-bottom: 20px;
         }
 
-        /* Borda branca girando */
-        #uploadCircle::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 140px;  /* Reduzido para dar espaço para o texto */
-            height: 140px;
-            border-radius: 50%;
-            border: 5px solid white; /* Borda branca */
-            animation: spin 2s linear infinite;
-            display: none;
-        }
-
+        /* Texto dentro do círculo */
         #circleText {
             font-size: 1rem;
             font-weight: bold;
-            color: var(--primary-color);
+            color: white; /* Texto branco dentro do círculo */
         }
 
         .percentages {
@@ -130,12 +119,6 @@
         body[data-theme="light"] #logs {
             background-color: var(--background-light);
             color: var(--text-light);
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
         }
 
     </style>
@@ -191,7 +174,6 @@
             logsElement.textContent = ''; // Limpa os logs
             circleText.textContent = 'Processando...';
             uploadCircle.style.setProperty('display', 'flex');
-            uploadCircle.style.animation = 'spin 2s linear infinite';
 
             // Inicia a animação das porcentagens com opacidade
             percentageElements.forEach((el) => {
@@ -286,7 +268,7 @@
         // Função para parar a animação do círculo e finalizar o processo
         function finishProcess() {
             const uploadCircle = document.getElementById('uploadCircle');
-            uploadCircle.style.animation = 'none'; // Parar animação
+            const circleText = document.getElementById('circleText');
             circleText.textContent = 'Processamento Concluído!';
         }
     </script>
