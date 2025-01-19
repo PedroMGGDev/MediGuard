@@ -77,7 +77,11 @@
         #circleText {
             font-size: 1rem;
             font-weight: bold;
-            color: white; /* Texto branco dentro do círculo */
+            color: white; /* Cor padrão (escuro) */
+        }
+
+        body[data-theme="light"] #circleText {
+            color: black; /* Texto preto no tema claro */
         }
 
         .percentages {
@@ -262,10 +266,10 @@
                 } else {
                     clearInterval(interval);
                 }
-            }, 20);
+            }, 30); // Ajuste a velocidade da animação
         }
 
-        // Função para parar a animação do círculo e finalizar o processo
+        // Função para finalizar o processo
         function finishProcess() {
             const uploadCircle = document.getElementById('uploadCircle');
             const circleText = document.getElementById('circleText');
