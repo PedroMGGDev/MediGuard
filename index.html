@@ -225,41 +225,39 @@
                     // Iniciar contagem para garantir o tempo mínimo de análise
                     ensureMinimumTime();
 
-                    for (let i = 1; i <= numPages; i++) {
-                        promises.push(
-                            pdf.getPage(i).then((page) => {
-                                logsElement.textContent += `Analisando página ${i}...\n`;
+                    let currentPage = 1;
+                    function analyzeNextPage() {
+                        if (currentPage <= numPages) {
+                            pdf.getPage(currentPage).then((page) => {
+                                logsElement.textContent += `Analisando página ${currentPage}...\n`;
+                                setTimeout(() => {
+                                    page.getTextContent().then((textContent) => {
+                                        const text = textContent.items.map((item) => item.str).join(' ');
 
-                                return page.getTextContent().then((textContent) => {
-                                    const text = textContent.items.map((item) => item.str).join(' ');
+                                        // Busca hashes no texto
+                                        const hashes = text.match(hashPattern);
+                                        const hashCountOnPage = hashes ? hashes.length : 0;
+                                        logsElement.textContent += `Página ${currentPage}: ${hashCountOnPage} hash(es) encontrado(s).\n`;
 
-                                    // Busca hashes no texto
-                                    const hashes = text.match(hashPattern);
-                                    if (hashes) {
-                                        hashCount += hashes.length;
-                                        logsElement.textContent += `Página ${i}: ${hashes.length} hash(es) encontrado(s).\n`;
-                                    } else {
-                                        logsElement.textContent += `Página ${i}: Nenhum hash encontrado.\n`;
-                                    }
-                                    pageProcessed++;
-                                });
-                            })
-                        );
+                                        hashCount += hashCountOnPage;
+                                        pageProcessed++;
+                                        currentPage++;
+
+                                        // Atualiza os percentuais de maliciosidade e segurança
+                                        const maliciousPercentage = Math.min(hashCount * 10, 100); // Exemplo de cálculo
+                                        percentMalicious.textContent = `Maliciosidade: ${maliciousPercentage}%`;
+                                        percentSafe.textContent = `Segurança: ${100 - maliciousPercentage}%`;
+
+                                        analyzeNextPage(); // Continua para a próxima página
+                                    });
+                                }, 2000); // Delay entre cada página
+                            });
+                        } else {
+                            finishProcess();
+                        }
                     }
 
-                    Promise.all(promises).then(() => {
-                        const maliciousPercentage = Math.min(hashCount * 10, 100); // Exemplo de cálculo
-                        percentMalicious.textContent = `Maliciosidade: ${maliciousPercentage}%`;
-                        percentSafe.textContent = `Segurança: ${100 - maliciousPercentage}%`;
-
-                        if (maliciousPercentage > 0) {
-                            circleText.textContent = 'Arquivo Malicioso!';
-                        } else {
-                            circleText.textContent = 'Arquivo Seguro!';
-                        }
-
-                        finishProcess();
-                    });
+                    analyzeNextPage(); // Começa a análise da primeira página
                 });
             };
             reader.readAsArrayBuffer(file);
@@ -269,6 +267,7 @@
         function finishProcess() {
             const uploadCircle = document.getElementById('uploadCircle');
             uploadCircle.style.animation = 'none'; // Parar animação
+            circleText.textContent = 'Processamento Concluído!';
         }
     </script>
 </body>
