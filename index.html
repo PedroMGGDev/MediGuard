@@ -40,32 +40,29 @@
             padding: 20px;
             flex-direction: column;
             text-align: center;
+            position: relative;
         }
 
-        /* Estilo Geral */
+        /* Título */
         h1 {
             color: var(--primary-color);
             margin-bottom: 20px;
         }
 
+        /* Botão de alternância de tema */
+        #themeToggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: var(--text-color);
+        }
+
         input[type="file"] {
             display: none;
-        }
-
-        /* Botão para upload em desktop */
-        button {
-            background-color: var(--primary-color);
-            color: var(--text-color);
-            border: none;
-            padding: 10px 20px;
-            font-size: 1.2rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        button:hover {
-            background-color: lighten(var(--primary-color), 10%);
         }
 
         /* Logs */
@@ -116,7 +113,7 @@
                 border: 10px solid transparent;
                 border-top: 10px solid var(--primary-color);
                 border-radius: 50%;
-                animation: rotate 0.8s linear infinite;
+                animation: rotate 1s linear infinite;
                 display: none;
             }
 
@@ -135,73 +132,83 @@
     <div id="container">
         <h1>MediGuard - Verificador de Arquivos</h1>
 
-        <!-- Layout Desktop -->
-        <div id="desktopContainer">
-            <input type="file" id="fileInput" accept="application/pdf" />
-            <button id="uploadButton" onclick="handleUpload()">Verificar Arquivo</button>
-            <div id="progressBar" style="display: none;">
-                <div id="progressBarFill" class="progress-bar-fill"></div>
-            </div>
-        </div>
+        <!-- Botão para alternar tema -->
+        <button id="themeToggle" onclick="toggleTheme()">🌙</button>
 
         <!-- Layout Mobile -->
-        <div id="circleContainer" style="display: none;" onclick="triggerUpload()">
+        <div id="circleContainer" onclick="triggerUpload()">
             <div class="circle-content">
                 <span id="circleText">Imputar Arquivo</span>
             </div>
             <div id="progressCircle"></div>
         </div>
 
+        <input type="file" id="fileInput" accept="application/pdf" onchange="handleFileUpload()" />
+
         <div id="logs"></div>
-        <button onclick="toggleTheme()">Mudar Tema</button>
     </div>
 
     <script>
-        // Detecta se é dispositivo móvel
-        const isMobile = window.matchMedia("(max-width: 768px)").matches;
-        const desktopContainer = document.getElementById('desktopContainer');
-        const circleContainer = document.getElementById('circleContainer');
         const fileInput = document.getElementById('fileInput');
         const progressCircle = document.getElementById('progressCircle');
-        const logsElement = document.getElementById('logs');
         const circleText = document.getElementById('circleText');
+        const logsElement = document.getElementById('logs');
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
 
-        // Mostra a interface apropriada
-        if (isMobile) {
-            desktopContainer.style.display = 'none';
-            circleContainer.style.display = 'flex';
-        } else {
-            desktopContainer.style.display = 'block';
-            circleContainer.style.display = 'none';
+        // Trocar tema (Dark/Light)
+        function toggleTheme() {
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
         }
 
-        // Lida com o upload de arquivo
+        // Simula clique no input de arquivo
         function triggerUpload() {
             fileInput.click();
         }
 
-        function handleUpload() {
+        // Lida com o upload do arquivo
+        function handleFileUpload() {
             const file = fileInput.files[0];
-            if (!file) {
-                alert('Por favor, selecione um arquivo PDF.');
-                return;
-            }
+            if (!file) return;
 
-            // Simula o progresso no círculo
+            // Mostra a animação de progresso
             progressCircle.style.display = 'block';
             circleText.textContent = 'Processando...';
+
+            // Simula validação (exemplo)
             setTimeout(() => {
                 progressCircle.style.display = 'none';
-                circleText.textContent = 'Concluído!';
-                logsElement.textContent = 'Análise completa. Arquivo seguro.';
-            }, 3000);
+                validateFile(file);
+            }, 1000);
         }
 
-        // Troca de tema
-        function toggleTheme() {
-            const body = document.body;
-            const currentTheme = body.getAttribute('data-theme');
-            body.setAttribute('data-theme', currentTheme === 'dark' ? 'light' : 'dark');
+        // Valida o arquivo
+        function validateFile(file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const pdfData = e.target.result;
+                const loadingTask = pdfjsLib.getDocument(pdfData);
+
+                loadingTask.promise.then((pdf) => {
+                    let foundMaliciousHash = false;
+
+                    // Simula validação
+                    setTimeout(() => {
+                        foundMaliciousHash = Math.random() < 0.5; // Simulação de hash malicioso
+                        if (foundMaliciousHash) {
+                            circleText.textContent = 'Malicioso!';
+                            logsElement.textContent = 'Hash malicioso encontrado!';
+                        } else {
+                            circleText.textContent = 'Seguro!';
+                            logsElement.textContent = 'Nenhum hash malicioso encontrado.';
+                        }
+                    }, 2000);
+                });
+            };
+            reader.readAsArrayBuffer(file);
         }
     </script>
 </body>
