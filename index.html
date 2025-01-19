@@ -113,6 +113,28 @@
             background-color: var(--background-light);
             color: var(--text-light);
         }
+
+        /* Animação do círculo girando */
+        #uploadCircle::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 5px solid transparent;
+            border-top-color: var(--primary-color);
+            animation: spin 2s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
     </style>
 </head>
 <body data-theme="dark">
@@ -155,6 +177,7 @@
             const circleText = document.getElementById('circleText');
             const percentMalicious = document.getElementById('percentMalicious');
             const percentSafe = document.getElementById('percentSafe');
+            const uploadCircle = document.getElementById('uploadCircle');
 
             if (!file) {
                 circleText.textContent = 'Por favor, selecione um arquivo!';
@@ -165,6 +188,8 @@
             circleText.textContent = 'Processando...';
             percentMalicious.textContent = 'Maliciosidade: 0%';
             percentSafe.textContent = 'Segurança: 100%';
+            uploadCircle.style.setProperty('display', 'flex');
+            uploadCircle.style.animation = 'spin 2s linear infinite';
 
             const reader = new FileReader();
             reader.onload = function (e) {
@@ -177,9 +202,34 @@
                     let hashCount = 0;
 
                     const promises = [];
+                    let pageProcessed = 0;
+                    let totalTime = 0;
+                    
+                    // Função para garantir que o processo dure pelo menos 10 segundos
+                    function ensureMinimumTime() {
+                        totalTime += 2; // Tempo acumulado
+                        if (totalTime < 10) {
+                            setTimeout(ensureMinimumTime, 2000);
+                        } else {
+                            checkFinished();
+                        }
+                    }
+
+                    // Função para verificar se o processo terminou após o tempo mínimo
+                    function checkFinished() {
+                        if (pageProcessed === numPages) {
+                            finishProcess();
+                        }
+                    }
+
+                    // Iniciar contagem para garantir o tempo mínimo de análise
+                    ensureMinimumTime();
+
                     for (let i = 1; i <= numPages; i++) {
                         promises.push(
                             pdf.getPage(i).then((page) => {
+                                logsElement.textContent += `Analisando página ${i}...\n`;
+
                                 return page.getTextContent().then((textContent) => {
                                     const text = textContent.items.map((item) => item.str).join(' ');
 
@@ -191,6 +241,7 @@
                                     } else {
                                         logsElement.textContent += `Página ${i}: Nenhum hash encontrado.\n`;
                                     }
+                                    pageProcessed++;
                                 });
                             })
                         );
@@ -206,10 +257,18 @@
                         } else {
                             circleText.textContent = 'Arquivo Seguro!';
                         }
+
+                        finishProcess();
                     });
                 });
             };
             reader.readAsArrayBuffer(file);
+        }
+
+        // Função para parar a animação do círculo e finalizar o processo
+        function finishProcess() {
+            const uploadCircle = document.getElementById('uploadCircle');
+            uploadCircle.style.animation = 'none'; // Parar animação
         }
     </script>
 </body>
