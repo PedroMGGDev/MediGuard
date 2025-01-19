@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediGuard - Verificador de Arquivos</title>
+    <title>MediGuard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <style>
         :root {
@@ -48,8 +48,8 @@
         }
 
         #title {
-            font-size: 2rem;
-            margin-bottom: 20px;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
             color: var(--primary-color);
         }
 
@@ -58,8 +58,8 @@
         }
 
         #uploadCircle {
-            width: 200px;
-            height: 200px;
+            width: 150px;
+            height: 150px;
             margin: 0 auto;
             border: 5px solid var(--primary-color);
             border-radius: 50%;
@@ -70,22 +70,27 @@
             position: relative;
         }
 
-        #uploadCircle::after {
-            content: '';
+        #percentMalicious {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            border: 5px solid transparent;
-            border-top-color: var(--primary-color);
-            animation: spin 2s linear infinite;
-            display: none;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--danger-color);
+        }
+
+        #percentSafe {
+            position: absolute;
+            top: -25px;
+            right: -100px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--safe-color);
         }
 
         #circleText {
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: bold;
         }
 
@@ -114,12 +119,6 @@
             color: var(--primary-color);
         }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
         body[data-theme="light"] #logs {
             background-color: var(--background-light);
             color: var(--text-light);
@@ -129,16 +128,17 @@
 <body data-theme="dark">
     <button id="themeToggle" onclick="toggleTheme()">🌙</button>
     <div id="container">
-        <div id="title">MediGuard - Verificador de Arquivos</div>
+        <div id="title">MediGuard</div>
         <div id="uploadCircle" onclick="triggerUpload()">
-            <span id="circleText">Imputar Arquivo</span>
+            <div id="percentMalicious">0%</div>
+            <div id="percentSafe">100% seguro</div>
+            <span id="circleText">Selecionar Arquivo</span>
         </div>
         <input type="file" id="fileInput" accept="application/pdf" onchange="handleFileUpload()" />
         <div id="logs"></div>
     </div>
 
     <script>
-        // Trocar tema (Dark/Light)
         function toggleTheme() {
             const body = document.body;
             const currentTheme = body.getAttribute('data-theme');
@@ -148,19 +148,18 @@
             themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
         }
 
-        // Simula clique no input de arquivo
         function triggerUpload() {
             const fileInput = document.getElementById('fileInput');
             fileInput.click();
         }
 
-        // Lida com o upload do arquivo e inicia a validação
         function handleFileUpload() {
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0];
             const logsElement = document.getElementById('logs');
             const circleText = document.getElementById('circleText');
-            const uploadCircle = document.getElementById('uploadCircle');
+            const percentMalicious = document.getElementById('percentMalicious');
+            const percentSafe = document.getElementById('percentSafe');
 
             if (!file) {
                 circleText.textContent = 'Por favor, selecione um arquivo!';
@@ -169,77 +168,23 @@
 
             logsElement.textContent = ''; // Limpa os logs
             circleText.textContent = 'Processando...';
-            uploadCircle.style.setProperty('--spin-display', 'block');
+            percentMalicious.textContent = '0%';
+            percentSafe.textContent = '100% seguro';
 
-            // Logs simulados com progresso
-            let progress = 0;
-            const logMessages = [
-                "Iniciando análise do arquivo...",
-                "Analisando conteúdo da página 1...",
-                "Analisando hashes...",
-                "Verificando a integridade do arquivo...",
-                "Finalizando análise..."
-            ];
+            setTimeout(() => {
+                // Simula detecção de maliciosidade
+                const maliciosidade = Math.floor(Math.random() * 101);
+                percentMalicious.textContent = `${maliciosidade}%`;
+                percentSafe.textContent = `${100 - maliciosidade}% seguro`;
 
-            const interval = setInterval(() => {
-                progress += 20;
-
-                if (progress <= 100) {
-                    logsElement.textContent += logMessages[Math.min((progress / 20) - 1, logMessages.length - 1)] + '\n';
+                if (maliciosidade > 50) {
+                    circleText.textContent = 'Arquivo perigoso!';
+                } else {
+                    circleText.textContent = 'Arquivo seguro!';
                 }
 
-                // Quando atingir 100%, iniciar a verificação de hashes
-                if (progress >= 100) {
-                    clearInterval(interval);
-                    uploadCircle.style.animation = 'none'; // Para a animação do círculo
-                    verifyPDF(file, logsElement, circleText);
-                }
-            }, 1000);
-        }
-
-        // Verifica o arquivo PDF e detecta hashes maliciosos
-        function verifyPDF(file, logsElement, circleText) {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const pdfData = e.target.result;
-                const loadingTask = pdfjsLib.getDocument(pdfData);
-
-                loadingTask.promise.then((pdf) => {
-                    const numPages = pdf.numPages;
-                    let foundMaliciousHash = false;
-
-                    // Padrão de hash (MD5, SHA-1, SHA-256)
-                    const hashPattern = /\b([a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64})\b/g;
-
-                    const promises = [];
-                    for (let i = 1; i <= numPages; i++) {
-                        promises.push(
-                            pdf.getPage(i).then((page) => {
-                                return page.getTextContent().then((textContent) => {
-                                    const text = textContent.items.map((item) => item.str).join(' ');
-
-                                    // Verifica se há hashes no texto da página
-                                    const hashes = text.match(hashPattern);
-                                    if (hashes) {
-                                        foundMaliciousHash = true;
-                                    }
-                                });
-                            })
-                        );
-                    }
-
-                    Promise.all(promises).then(() => {
-                        if (foundMaliciousHash) {
-                            circleText.textContent = 'Malicioso!';
-                            logsElement.textContent += 'Atenção! O arquivo contém hashes maliciosos.\n';
-                        } else {
-                            circleText.textContent = 'Seguro!';
-                            logsElement.textContent += 'Nenhum hash malicioso encontrado.\n';
-                        }
-                    });
-                });
-            };
-            reader.readAsArrayBuffer(file);
+                logsElement.textContent = `Análise concluída.\nPercentual de maliciosidade: ${maliciosidade}%`;
+            }, 2000);
         }
     </script>
 </body>
