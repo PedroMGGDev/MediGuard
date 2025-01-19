@@ -71,16 +71,16 @@
             margin-bottom: 20px;
         }
 
+        /* Borda branca girando */
         #uploadCircle::after {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
-            width: 150px;
-            height: 150px;
+            width: 140px;  /* Reduzido para dar espaço para o texto */
+            height: 140px;
             border-radius: 50%;
-            border: 5px solid transparent;
-            border-top-color: var(--primary-color);
+            border: 5px solid white; /* Borda branca */
             animation: spin 2s linear infinite;
             display: none;
         }
@@ -88,6 +88,7 @@
         #circleText {
             font-size: 1rem;
             font-weight: bold;
+            color: var(--primary-color);
         }
 
         .percentages {
@@ -97,6 +98,9 @@
         .percentage {
             font-size: 1.2rem;
             margin: 10px 0;
+            color: var(--text-dark);
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
         }
 
         #logs {
@@ -177,6 +181,7 @@
             const percentMalicious = document.getElementById('percentMalicious');
             const percentSafe = document.getElementById('percentSafe');
             const uploadCircle = document.getElementById('uploadCircle');
+            const percentageElements = document.querySelectorAll('.percentage');
 
             if (!file) {
                 circleText.textContent = 'Por favor, selecione um arquivo!';
@@ -185,10 +190,13 @@
 
             logsElement.textContent = ''; // Limpa os logs
             circleText.textContent = 'Processando...';
-            percentMalicious.textContent = 'Maliciosidade: 0%';
-            percentSafe.textContent = 'Segurança: 100%';
             uploadCircle.style.setProperty('display', 'flex');
             uploadCircle.style.animation = 'spin 2s linear infinite';
+
+            // Inicia a animação das porcentagens com opacidade
+            percentageElements.forEach((el) => {
+                el.style.opacity = 1;
+            });
 
             const reader = new FileReader();
             reader.onload = function (e) {
@@ -203,7 +211,7 @@
                     const promises = [];
                     let pageProcessed = 0;
                     let totalTime = 0;
-                    
+
                     // Função para garantir que o processo dure pelo menos 10 segundos
                     function ensureMinimumTime() {
                         totalTime += 2; // Tempo acumulado
@@ -242,10 +250,10 @@
                                         pageProcessed++;
                                         currentPage++;
 
-                                        // Atualiza os percentuais de maliciosidade e segurança
+                                        // Atualiza os percentuais de maliciosidade e segurança com animação
                                         const maliciousPercentage = Math.min(hashCount * 10, 100); // Exemplo de cálculo
-                                        percentMalicious.textContent = `Maliciosidade: ${maliciousPercentage}%`;
-                                        percentSafe.textContent = `Segurança: ${100 - maliciousPercentage}%`;
+                                        animatePercentage(percentMalicious, maliciousPercentage);
+                                        animatePercentage(percentSafe, 100 - maliciousPercentage);
 
                                         analyzeNextPage(); // Continua para a próxima página
                                     });
@@ -260,6 +268,19 @@
                 });
             };
             reader.readAsArrayBuffer(file);
+        }
+
+        // Anima a porcentagem aumentando gradualmente
+        function animatePercentage(element, targetPercentage) {
+            let currentPercentage = 0;
+            const interval = setInterval(() => {
+                if (currentPercentage < targetPercentage) {
+                    currentPercentage++;
+                    element.textContent = `${element.textContent.split(':')[0]}: ${currentPercentage}%`;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 20);
         }
 
         // Função para parar a animação do círculo e finalizar o processo
