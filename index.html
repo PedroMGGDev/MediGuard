@@ -1,280 +1,49 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediGuard</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
-    <style>
-        :root {
-            --background-dark: #121212;
-            --text-dark: #fff;
-            --background-light: #f4f4f4;
-            --text-light: #333;
-            --primary-color: #1E90FF;
-            --safe-color: #2ecc71;
-            --danger-color: #e74c3c;
-        }
-
-        body[data-theme="dark"] {
-            background-color: var(--background-dark);
-            color: var(--text-dark);
-            transition: background-color 0.5s, color 0.5s;
-        }
-
-        body[data-theme="light"] {
-            background-color: var(--background-light);
-            color: var(--text-light);
-            transition: background-color 0.5s, color 0.5s;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        #container {
-            width: 100%;
-            max-width: 600px;
-            text-align: center;
-        }
-
-        #title {
-            font-size: 2.5rem;
-            margin-bottom: 30px;
-            color: var(--primary-color);
-        }
-
-        #fileInput {
-            display: none;
-        }
-
-        #uploadCircle {
-            width: 150px;
-            height: 150px;
-            margin: 0 auto;
-            border: 5px solid var(--primary-color);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            position: relative;
-            margin-bottom: 20px;
-        }
-
-        /* Texto dentro do círculo */
-        #circleText {
-            font-size: 1rem;
-            font-weight: bold;
-            color: white; /* Cor padrão (escuro) */
-        }
-
-        body[data-theme="light"] #circleText {
-            color: black; /* Texto preto no tema claro */
-        }
-
-        .percentages {
-            margin-bottom: 20px;
-        }
-
-        .percentage {
-            font-size: 1.2rem;
-            margin: 10px 0;
-            color: var(--text-dark);
-            opacity: 0;
-            transition: opacity 1s ease-in-out;
-        }
-
-        #logs {
-            font-size: 1rem;
-            white-space: pre-wrap;
-            font-family: monospace;
-            max-height: 150px;
-            overflow-y: auto;
-            border: 1px solid var(--primary-color);
-            padding: 10px;
-            border-radius: 8px;
-            background-color: var(--background-dark);
-            color: var(--text-dark);
-        }
-
-        #themeToggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 1.5rem;
-            cursor: pointer;
-            background: none;
-            border: none;
-            color: var(--primary-color);
-        }
-
-        body[data-theme="light"] #logs {
-            background-color: var(--background-light);
-            color: var(--text-light);
-        }
-
-    </style>
+    <title>Teste API Hugging Face</title>
 </head>
-<body data-theme="dark">
-    <button id="themeToggle" onclick="toggleTheme()">🌙</button>
-    <div id="container">
-        <div id="title">MediGuard</div>
-        <div id="uploadCircle" onclick="triggerUpload()">
-            <span id="circleText">Selecionar Arquivo</span>
-        </div>
-        <div class="percentages">
-            <div id="percentMalicious" class="percentage" style="color: var(--danger-color);">Maliciosidade: 0%</div>
-            <div id="percentSafe" class="percentage" style="color: var(--safe-color);">Segurança: 100%</div>
-        </div>
-        <input type="file" id="fileInput" accept="application/pdf" onchange="handleFileUpload()" />
-        <div id="logs"></div>
-    </div>
+<body>
+    <h1>Teste da API do Hugging Face</h1>
+    <button id="generateButton">Gerar Resposta</button>
+    <pre id="responseOutput"></pre>
 
     <script>
-        // Alterna entre tema claro e escuro
-        function toggleTheme() {
-            const body = document.body;
-            const currentTheme = body.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            body.setAttribute('data-theme', newTheme);
-            const themeToggle = document.getElementById('themeToggle');
-            themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
-        }
+        document.getElementById('generateButton').addEventListener('click', async () => {
+            const token = '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'; // Substitua pelo seu token da Hugging Face
+            const url = 'https://api-inference.huggingface.co/models/meta-llama/Llama-3.3-70B-Instruct';
 
-        // Simula clique no input de arquivo
-        function triggerUpload() {
-            const fileInput = document.getElementById('fileInput');
-            fileInput.click();
-        }
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
 
-        // Lida com o upload do arquivo e inicia a análise
-        function handleFileUpload() {
-            const fileInput = document.getElementById('fileInput');
-            const file = fileInput.files[0];
-            const logsElement = document.getElementById('logs');
-            const circleText = document.getElementById('circleText');
-            const percentMalicious = document.getElementById('percentMalicious');
-            const percentSafe = document.getElementById('percentSafe');
-            const uploadCircle = document.getElementById('uploadCircle');
-            const percentageElements = document.querySelectorAll('.percentage');
-
-            if (!file) {
-                circleText.textContent = 'Por favor, selecione um arquivo!';
-                return;
-            }
-
-            logsElement.textContent = ''; // Limpa os logs
-            circleText.textContent = 'Processando...';
-            uploadCircle.style.setProperty('display', 'flex');
-
-            // Inicia a animação das porcentagens com opacidade
-            percentageElements.forEach((el) => {
-                el.style.opacity = 1;
+            const body = JSON.stringify({
+                "inputs": "Quem é você?"
             });
 
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const pdfData = e.target.result;
-                const loadingTask = pdfjsLib.getDocument(pdfData);
-
-                loadingTask.promise.then((pdf) => {
-                    const numPages = pdf.numPages;
-                    const hashPattern = /\b([a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64})\b/g;
-                    let hashCount = 0;
-
-                    const promises = [];
-                    let pageProcessed = 0;
-                    let totalTime = 0;
-
-                    // Função para garantir que o processo dure pelo menos 10 segundos
-                    function ensureMinimumTime() {
-                        totalTime += 2; // Tempo acumulado
-                        if (totalTime < 10) {
-                            setTimeout(ensureMinimumTime, 2000);
-                        } else {
-                            checkFinished();
-                        }
-                    }
-
-                    // Função para verificar se o processo terminou após o tempo mínimo
-                    function checkFinished() {
-                        if (pageProcessed === numPages) {
-                            finishProcess();
-                        }
-                    }
-
-                    // Iniciar contagem para garantir o tempo mínimo de análise
-                    ensureMinimumTime();
-
-                    let currentPage = 1;
-                    function analyzeNextPage() {
-                        if (currentPage <= numPages) {
-                            pdf.getPage(currentPage).then((page) => {
-                                logsElement.textContent += `Analisando página ${currentPage}...\n`;
-                                setTimeout(() => {
-                                    page.getTextContent().then((textContent) => {
-                                        const text = textContent.items.map((item) => item.str).join(' ');
-
-                                        // Busca hashes no texto
-                                        const hashes = text.match(hashPattern);
-                                        const hashCountOnPage = hashes ? hashes.length : 0;
-                                        logsElement.textContent += `Página ${currentPage}: ${hashCountOnPage} hash(es) encontrado(s).\n`;
-
-                                        hashCount += hashCountOnPage;
-                                        pageProcessed++;
-                                        currentPage++;
-
-                                        // Atualiza os percentuais de maliciosidade e segurança com animação
-                                        const maliciousPercentage = Math.min(hashCount * 10, 100); // Exemplo de cálculo
-                                        animatePercentage(percentMalicious, maliciousPercentage);
-                                        animatePercentage(percentSafe, 100 - maliciousPercentage);
-
-                                        analyzeNextPage(); // Continua para a próxima página
-                                    });
-                                }, 2000); // Delay entre cada página
-                            });
-                        } else {
-                            finishProcess();
-                        }
-                    }
-
-                    analyzeNextPage(); // Começa a análise da primeira página
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: body
                 });
-            };
-            reader.readAsArrayBuffer(file);
-        }
 
-        // Anima a porcentagem aumentando gradualmente
-        function animatePercentage(element, targetPercentage) {
-            let currentPercentage = 0;
-            const interval = setInterval(() => {
-                if (currentPercentage < targetPercentage) {
-                    currentPercentage++;
-                    element.textContent = `${element.textContent.split(':')[0]}: ${currentPercentage}%`;
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Exibe a resposta gerada pela IA
+                    document.getElementById('responseOutput').textContent = JSON.stringify(data, null, 2);
                 } else {
-                    clearInterval(interval);
+                    // Exibe o erro se a resposta não for bem-sucedida
+                    document.getElementById('responseOutput').textContent = 'Erro na requisição: ' + data.error || 'Erro desconhecido';
                 }
-            }, 30); // Ajuste a velocidade da animação
-        }
-
-        // Função para finalizar o processo
-        function finishProcess() {
-            const uploadCircle = document.getElementById('uploadCircle');
-            const circleText = document.getElementById('circleText');
-            circleText.textContent = 'Processamento Concluído!';
-        }
+            } catch (error) {
+                document.getElementById('responseOutput').textContent = 'Erro ao conectar com o servidor: ' + error.message;
+            }
+        });
     </script>
 </body>
 </html>
